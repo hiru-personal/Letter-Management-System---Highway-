@@ -2241,19 +2241,12 @@
         .login-card-container {
             display: flex;
             gap: 24px;
-            max-width: 900px;
+            max-width: 480px;
             width: 90%;
             animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
         
-        @media (max-width: 768px) {
-            .login-card-container {
-                flex-direction: column;
-                max-width: 450px;
-            }
-        }
-        
-        .login-card, .quick-roles-card {
+        .login-card {
             background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
@@ -2262,21 +2255,10 @@
             padding: 40px;
             color: #ffffff;
             box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        }
-        
-        .login-card {
-            flex: 1.2;
+            flex: 1;
             display: flex;
             flex-direction: column;
             gap: 20px;
-        }
-        
-        .quick-roles-card {
-            flex: 0.8;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            justify-content: center;
         }
         
         .login-logo {
@@ -2365,59 +2347,7 @@
             color: var(--accent-gold);
         }
         
-        .quick-roles-card h3 {
-            font-family: var(--font-heading);
-            font-size: 18px;
-            font-weight: 600;
-        }
-        
-        .quick-roles-card p {
-            font-size: 12.5px;
-            color: rgba(255, 255, 255, 0.6);
-            margin-bottom: 8px;
-        }
-        
-        .quick-roles-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 10px;
-            overflow-y: auto;
-            max-height: 350px;
-            padding-right: 4px;
-        }
-        
-        .quick-role-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #ffffff;
-            padding: 12px 16px;
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            text-align: left;
-            width: 100%;
-        }
-        
-        .quick-role-btn i {
-            font-size: 16px;
-            color: var(--accent-gold);
-            width: 20px;
-            text-align: center;
-        }
-        
-        .quick-role-btn span {
-            font-size: 13px;
-            font-weight: 500;
-        }
-        
-        .quick-role-btn:hover {
-            background: rgba(255, 255, 255, 0.12);
-            border-color: rgba(255, 255, 255, 0.25);
-            transform: translateX(4px);
-        }
+
         
         .r-chip {
             cursor: pointer;
@@ -2555,37 +2485,7 @@
                     <p>Demo accounts default password is: <code>password123</code></p>
                 </div>
             </div>
-            
-            <div class="quick-roles-card">
-                <h3>Quick Switch (Demo Accounts)</h3>
-                <p>Click any profile below to instantly authenticate with that role:</p>
-                <div class="quick-roles-grid">
-                    <button type="button" class="quick-role-btn" onclick="quickLogin('System Admin')">
-                        <i class="fa-solid fa-user-shield"></i>
-                        <span>System Admin</span>
-                    </button>
-                    <button type="button" class="quick-role-btn" onclick="quickLogin('CC - Admin (ADM 01)')">
-                        <i class="fa-solid fa-user-pen"></i>
-                        <span>Admin CC (ADM 01)</span>
-                    </button>
-                    <button type="button" class="quick-role-btn" onclick="quickLogin('R01 - Admin (Additional Secretary (Administration))')">
-                        <i class="fa-solid fa-user-tie"></i>
-                        <span>Admin R01 (Addl. Sec.)</span>
-                    </button>
-                    <button type="button" class="quick-role-btn" onclick="quickLogin('Subject User - Admin (ADM 03)')">
-                        <i class="fa-solid fa-user"></i>
-                        <span>Admin Subject (ADM 03)</span>
-                    </button>
-                    <button type="button" class="quick-role-btn" onclick="quickLogin('CC - Development (DEV 12)')">
-                        <i class="fa-solid fa-user-pen"></i>
-                        <span>Dev CC (DEV 12)</span>
-                    </button>
-                    <button type="button" class="quick-role-btn" onclick="quickLogin('Secretary')">
-                        <i class="fa-solid fa-crown"></i>
-                        <span>Secretary (Full Viewer)</span>
-                    </button>
-                </div>
-            </div>
+
         </div>
     </div>
 
