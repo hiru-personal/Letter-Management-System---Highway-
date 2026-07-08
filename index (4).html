@@ -6242,9 +6242,9 @@
                     ? `<span class="badge" style="background:#e6f0ff;color:#1a3c5e;border:1px solid #aac4f0;font-size:10px;margin-left:6px;vertical-align:middle;"><i class="fa-solid fa-copy" style="font-size:9px;"></i> COPY</span>`
                     : '';
 
-                // Action buttons: Subject Users get View + Update Status, other copy recipients get View + Reply, others get View + Status
+                // Action buttons: Subject Users and R01 Users get View + Update Status, other copy recipients get View + Reply, others get View + Status
                 let actionButtons = '';
-                if (currentlyActiveRole.startsWith("Subject User")) {
+                if (currentlyActiveRole.startsWith("Subject User") || currentlyActiveRole.startsWith("R01")) {
                     actionButtons = `<button class="btn btn-sm btn-outline" onclick="openDetailModal('${letter.letterNo}')">
                             <i class="fa-solid fa-eye"></i> View
                         </button>
