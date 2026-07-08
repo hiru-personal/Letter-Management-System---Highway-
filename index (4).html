@@ -2543,6 +2543,12 @@
                             <span>Add. Sec. Mail</span>
                         </a>
                     </li>
+                    <li data-role-visible="returned-letters-role" style="display: none;">
+                        <a href="#" class="nav-item" data-target="returned-letters">
+                            <i class="fa-solid fa-arrow-rotate-left"></i>
+                            <span>Returned Letters</span>
+                        </a>
+                    </li>
                     <li data-role-visible="action-tracking-role">
                         <a href="#" class="nav-item" data-target="action-tracking">
                             <i class="fa-solid fa-route"></i>
@@ -3190,6 +3196,43 @@
                                     </tr>
                                 </thead>
                                 <tbody id="addsec-mail-body">
+                                    <!-- Dynamic rows from JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Returned Letters Tab Panel -->
+                <div class="tab-panel" id="returned-letters">
+                    <div class="panel-card">
+                        <div class="panel-header border-bottom">
+                            <div class="panel-title-area">
+                                <i class="fa-solid fa-arrow-rotate-left text-blue"></i>
+                                <h3>Returned Letters</h3>
+                            </div>
+                            <div class="panel-filters gap-2">
+                                <input type="text" placeholder="Search matter, sender or track ID..." class="search-input-field" id="returned-letters-search" oninput="renderReturnedLettersTable()">
+                                <button class="btn btn-outline" onclick="document.getElementById('returned-letters-search').value='';renderReturnedLettersTable();">Reset</button>
+                            </div>
+                        </div>
+                        <div class="table-scroll-container">
+                            <table class="data-table" id="returned-letters-table">
+                                <thead>
+                                    <tr>
+                                        <th>Letter No</th>
+                                        <th>Mail Type</th>
+                                        <th>Post Type</th>
+                                        <th>Matter</th>
+                                        <th>Sender</th>
+                                        <th>Letter Date</th>
+                                        <th>Returned From</th>
+                                        <th>R. Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="returned-letters-body">
                                     <!-- Dynamic rows from JS -->
                                 </tbody>
                             </table>
@@ -4338,7 +4381,7 @@
                     nav = "all,mail-folders-role,action-tracking-role,user-tracking-role,export-report-role";
                 } else if (isCC) {
                     key = `CC - ${u.division.replace(" Division", "")} (${u.subjectcode})`;
-                    nav = "all,add-letter-role,mail-folders-role,action-tracking-role,user-tracking-role,export-report-role";
+                    nav = "all,add-letter-role,mail-folders-role,action-tracking-role,user-tracking-role,export-report-role,returned-letters-role";
                 } else if (isR01) {
                     key = `R01 - ${u.division.replace(" Division", "")} (${u.role})`;
                     nav = "all,letters-for-me-role,action-tracking-role,user-tracking-role,export-report-role";
@@ -5478,6 +5521,8 @@
                         initExportReportTab();
                     } else if (targetId === "user-management") {
                         renderUsersTable();
+                    } else if (targetId === "returned-letters") {
+                        renderReturnedLettersTable();
                     }
                 });
             });
@@ -7348,6 +7393,69 @@
             document.getElementById("usr-edit-idx").value = "";
             document.getElementById("user-form-title").textContent = "Add New System User";
             document.getElementById("btn-save-user").innerHTML = `<i class="fa-solid fa-save"></i> Save User`;
+        }
+
+        // --- RETURNED LETTERS TABLE RENDERER ---
+        function renderReturnedLettersTable() {
+            const body = document.getElementById("returned-letters-body");
+            if (!body) return;
+            body.innerHTML = "";
+
+            const activeConfig = rolesConfig[currentlyActiveRole];
+            if (!activeConfig) return;
+
+            const searchVal = (document.getElementById("returned-letters-search")?.value || "").toLowerCase();
+
+            const filtered = lettersData.filter(letter => {
+                const matchStatus = letter.status === "Returned";
+                const matchAssignee = letter.assignedTo === activeConfig.name;
+                const matchSearch = !searchVal || 
+                    letter.matter.toLowerCase().includes(searchVal) || 
+                    letter.sender.toLowerCase().includes(searchVal) ||
+                    letter.letterNo.toLowerCase().includes(searchVal);
+                return matchStatus && matchAssignee && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                body.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--text-light);padding:30px;">No returned letters found.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(letter => {
+                let returnedFrom = "-";
+                if (letter.history && letter.history.length > 0) {
+                    const returnEvents = letter.history.filter(h => h.action === "Returned");
+                    if (returnEvents.length > 0) {
+                        returnedFrom = returnEvents[returnEvents.length - 1].actor;
+                    }
+                }
+
+                const statusClass = "badge-status-returned";
+
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td><strong>${letter.letterNo}</strong></td>
+                    <td><span class="badge badge-primary">${letter.mailType}</span></td>
+                    <td>${letter.postType}</td>
+                    <td><div class="subject-cell" title="${letter.matter}">${letter.matter}</div></td>
+                    <td><div class="subject-cell font-semibold" title="${letter.sender}">${letter.sender}</div></td>
+                    <td>${letter.letterDate}</td>
+                    <td>${returnedFrom}</td>
+                    <td>${letter.rDate}</td>
+                    <td><span class="badge ${statusClass}">${letter.status}</span></td>
+                    <td>
+                        <div style="display: flex; gap: 4px;">
+                            <button class="btn btn-sm btn-outline" onclick="openDetailModal('${letter.letterNo}')">
+                                <i class="fa-solid fa-eye"></i> View
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="openStatusUpdateModal('${letter.letterNo}')">
+                                <i class="fa-solid fa-pen-to-square"></i> Status
+                            </button>
+                        </div>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
         }
 
         // --- MAIN MAIL TABLE RENDERER ---
