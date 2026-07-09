@@ -2832,6 +2832,44 @@
                         </section>
                     </div>
 
+                    <!-- D. COORDINATING CLERK DASHBOARD VARIANT -->
+                    <div class="dashboard-variant dashboard-cc-view" style="display: none;">
+                        <!-- Top Stat Cards -->
+                        <section class="stat-cards-grid" id="cc-stat-cards-grid" style="margin-bottom: 24px;">
+                            <!-- Populated dynamically via JS -->
+                        </section>
+
+                        <!-- Middle Grid: Chart + Division Letters Quick View -->
+                        <section class="dashboard-middle-grid">
+                            <!-- Bar Chart -->
+                            <div class="panel-card chart-panel">
+                                <div class="panel-header">
+                                    <div class="panel-title-area">
+                                        <i class="fa-solid fa-chart-simple text-blue"></i>
+                                        <h3>Division Letter Statuses</h3>
+                                    </div>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="ccStatusChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Letters Sent for Me Quick View Panel (last 5) -->
+                            <div class="panel-card division-panel">
+                                <div class="panel-header">
+                                    <div class="panel-title-area">
+                                        <i class="fa-solid fa-user-tag text-blue"></i>
+                                        <h3>Recent Division Letters</h3>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline" onclick="switchTab('returned-letters')">View Returned</button>
+                                </div>
+                                <div class="quick-view-list" id="cc-quick-view-list">
+                                    <!-- Rendered dynamically from JS -->
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
                     <!-- C. SUBJECT USER DASHBOARD VARIANT -->
                     <div class="dashboard-variant dashboard-subject-view" style="display: none;">
                         <!-- Top Stat Card -->
@@ -4026,6 +4064,41 @@
                             </div>
                         </div>
 
+                        <!-- Conditional Re-route Section for CC -->
+                        <div class="form-grid" id="status-modal-reroute-section"
+                            style="display: none; grid-template-columns: 1fr 1fr 1fr; gap: 16px; width: 100%;">
+                            <div class="form-group">
+                                <label for="status-modal-reroute-division">Select Division <span class="required">*</span></label>
+                                <select id="status-modal-reroute-division" class="form-control"
+                                    onchange="handleRerouteDivisionChange(this.value)">
+                                    <option value="">Select Division</option>
+                                    <option value="Admin Division">Admin</option>
+                                    <option value="Rural Road Division">Rural Roads (Special)</option>
+                                    <option value="Account Division">Accounts</option>
+                                    <option value="Development Division">Development</option>
+                                    <option value="Internal Audit Division">Internal Audit</option>
+                                    <option value="Engineering Division">Engineering</option>
+                                    <option value="Planning Division">Planning</option>
+                                    <option value="Procurement Division">Procurement</option>
+                                    <option value="UD Division">UD</option>
+                                    <option value="Transport Division">Transport</option>
+                                    <option value="Secretary Office">Secretary Office</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="status-modal-reroute-r01">Ref 01 User <span class="required">*</span></label>
+                                <select id="status-modal-reroute-r01" class="form-control">
+                                    <option value="">Select Ref 01 User</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="status-modal-reroute-subject">Subject User <span class="required">*</span></label>
+                                <select id="status-modal-reroute-subject" class="form-control">
+                                    <option value="">Select Subject User</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div class="form-group">
                             <label for="status-modal-notes">Handling Notes / Remarks <span
                                     class="required">*</span></label>
@@ -4792,6 +4865,7 @@
 
         // Dynamic chart references
         let r01ChartInstance = null;
+        let ccChartInstance = null;
 
         // --- INITIALIZE APPLICATION ---
         document.addEventListener("DOMContentLoaded", () => {
@@ -6432,6 +6506,9 @@
                 document.querySelector(".dashboard-admin-view").style.display = "block";
                 renderRegistryTable();
                 updateDashboardStatCounters();
+            } else if (config && config.isCC) {
+                document.querySelector(".dashboard-cc-view").style.display = "block";
+                renderCCDashboard(config);
             } else if (role.startsWith("R01")) {
                 document.querySelector(".dashboard-r01-view").style.display = "block";
                 renderR01Dashboard(config);
@@ -6439,6 +6516,212 @@
                 document.querySelector(".dashboard-subject-view").style.display = "block";
                 renderSubjectDashboard(config);
             }
+        }
+
+        // C. CC DASHBOARD RENDERER
+        function renderCCDashboard(config) {
+            const divisionLetters = lettersData.filter(l => l.assignedDiv === config.division);
+
+            // 1. Render cards dynamically
+            const cardsGrid = document.getElementById("cc-stat-cards-grid");
+            if (cardsGrid) {
+                cardsGrid.innerHTML = "";
+                const totalAll = lettersData.length;
+                const totalAddSec = lettersData.filter(l => l.mailType === "Add. Sec. Mail").length;
+                const totalMain = lettersData.filter(l => l.mailType === "Main Mail").length;
+                const scaleFactor = 12;
+
+                const isAdminCC = config.division === "Admin Division";
+
+                if (isAdminCC) {
+                    cardsGrid.style.gridTemplateColumns = "1fr 1fr 1fr";
+                    cardsGrid.innerHTML = `
+                        <!-- Card 1: All Letters -->
+                        <div class="stat-card active-filter-card" style="cursor: default;">
+                            <div class="card-glow"></div>
+                            <div class="card-content">
+                                <div class="card-info">
+                                    <span class="card-label">ALL LETTERS</span>
+                                    <h2 class="card-value">${totalAll * scaleFactor}</h2>
+                                    <span class="card-trend text-up"><i class="fa-solid fa-arrow-trend-up"></i> +12% this week</span>
+                                </div>
+                                <div class="card-icon bg-blue">
+                                    <i class="fa-solid fa-envelopes-bulk"></i>
+                                </div>
+                            </div>
+                            <div class="card-footer-indicator">
+                                <span>Showing All Letters</span>
+                                <i class="fa-solid fa-circle-check"></i>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Add. Sec. Mail -->
+                        <div class="stat-card" style="cursor: default;">
+                            <div class="card-glow"></div>
+                            <div class="card-content">
+                                <div class="card-info">
+                                    <span class="card-label">ADD. SEC. MAIL</span>
+                                    <h2 class="card-value">${totalAddSec * scaleFactor}</h2>
+                                    <span class="card-trend text-neutral"><i class="fa-solid fa-envelope"></i> Assigned for review</span>
+                                </div>
+                                <div class="card-icon bg-gold">
+                                    <i class="fa-solid fa-user-tie"></i>
+                                </div>
+                            </div>
+                            <div class="card-footer-indicator">
+                                <span>Total Add. Sec. Mail</span>
+                            </div>
+                        </div>
+
+                        <!-- Card 3: Main Mail -->
+                        <div class="stat-card" style="cursor: default;">
+                            <div class="card-glow"></div>
+                            <div class="card-content">
+                                <div class="card-info">
+                                    <span class="card-label">MAIN MAIL</span>
+                                    <h2 class="card-value">${totalMain * scaleFactor}</h2>
+                                    <span class="card-trend text-up"><i class="fa-solid fa-arrow-up"></i> High priority entries</span>
+                                </div>
+                                <div class="card-icon bg-teal">
+                                    <i class="fa-solid fa-inbox"></i>
+                                </div>
+                            </div>
+                            <div class="card-footer-indicator">
+                                <span>Total Main Mail</span>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    cardsGrid.style.gridTemplateColumns = "1fr";
+                    cardsGrid.innerHTML = `
+                        <!-- Card 1: All Letters -->
+                        <div class="stat-card active-filter-card" style="cursor: default;">
+                            <div class="card-glow"></div>
+                            <div class="card-content">
+                                <div class="card-info">
+                                    <span class="card-label">ALL LETTERS</span>
+                                    <h2 class="card-value">${totalAll * scaleFactor}</h2>
+                                    <span class="card-trend text-up"><i class="fa-solid fa-arrow-trend-up"></i> +12% this week</span>
+                                </div>
+                                <div class="card-icon bg-blue">
+                                    <i class="fa-solid fa-envelopes-bulk"></i>
+                                </div>
+                            </div>
+                            <div class="card-footer-indicator">
+                                <span>Showing All Letters</span>
+                                <i class="fa-solid fa-circle-check"></i>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            // 2. Render quick view list (last 5 division letters)
+            const quickViewList = document.getElementById("cc-quick-view-list");
+            if (quickViewList) {
+                quickViewList.innerHTML = "";
+                const recent5 = divisionLetters.slice(0, 5);
+                if (recent5.length === 0) {
+                    quickViewList.innerHTML = `<div style="text-align: center; color: var(--text-light); padding: 20px;">No letters in division.</div>`;
+                } else {
+                    recent5.forEach(letter => {
+                        const item = document.createElement("div");
+                        item.className = "quick-view-item";
+                        item.setAttribute("onclick", `openDetailModal('${letter.letterNo}')`);
+                        item.innerHTML = `
+                            <div class="qv-left">
+                                <span class="qv-letter-no">${letter.letterNo}</span>
+                                <div class="qv-matter" title="${letter.matter}">${letter.matter}</div>
+                                <span class="qv-sender">From: ${letter.sender}</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-light"></i>
+                        `;
+                        quickViewList.appendChild(item);
+                    });
+                }
+            }
+
+            // 3. Render Chart
+            const chartCtx = document.getElementById("ccStatusChart").getContext("2d");
+            if (ccChartInstance) {
+                ccChartInstance.destroy();
+            }
+
+            const colors = {
+                blue: '#4299e1',      // All Division Letters
+                red: '#f56565',       // Returned
+                green: '#48bb78',     // Action Completed
+                lightBlue: '#63b3ed',  // Noted
+                yellow: '#ecc94b',    // In Progress
+                purple: '#9f7aea'     // Forwarded
+            };
+
+            ccChartInstance = new Chart(chartCtx, {
+                type: 'bar',
+                data: {
+                    labels: ["All Division Letters", "Returned", "Action Completed", "Noted", "In Progress", "Forwarded"],
+                    datasets: [{
+                        data: [
+                            divisionLetters.length,
+                            divisionLetters.filter(l => l.status === "Returned").length,
+                            divisionLetters.filter(l => l.status === "Action Completed").length,
+                            divisionLetters.filter(l => l.status === "Noted").length,
+                            divisionLetters.filter(l => l.status === "In Progress").length,
+                            divisionLetters.filter(l => l.status === "Forwarded").length
+                        ],
+                        backgroundColor: [
+                            colors.blue,
+                            colors.red,
+                            colors.green,
+                            colors.lightBlue,
+                            colors.yellow,
+                            colors.purple
+                        ],
+                        borderWidth: 0,
+                        borderRadius: 6,
+                        barThickness: 28
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#1a3c5e',
+                            titleFont: { family: 'Outfit', size: 13, weight: '600' },
+                            bodyFont: { family: 'Inter', size: 12 },
+                            padding: 12,
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#edf2f7',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                font: { family: 'Inter', size: 11 },
+                                color: '#718096',
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                font: { family: 'Outfit', size: 11, weight: '500' },
+                                color: '#4a5568'
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         // B. R01 DASHBOARD RENDERER
@@ -7659,6 +7942,8 @@
             document.getElementById("status-modal-assigned").textContent = `${letter.assignedTo} (${letter.assignedDiv})`;
 
             const isSubjectUser = currentlyActiveRole.startsWith("Subject User");
+            const config = rolesConfig[currentlyActiveRole];
+            const isCC = config && config.isCC;
 
             // Build action options dynamically
             const actionSelect = document.getElementById("status-modal-action");
@@ -7669,6 +7954,11 @@
                     actionSelect.appendChild(new Option("Action Completed", "Action Completed"));
                     actionSelect.appendChild(new Option("Noted", "Noted"));
                     actionSelect.appendChild(new Option("Return", "Return"));
+                } else if (isCC && letter.status === "Returned") {
+                    actionSelect.appendChild(new Option("Re-route / Send to Division", "Re-route"));
+                    actionSelect.appendChild(new Option("In Progress", "In Progress"));
+                    actionSelect.appendChild(new Option("Action Completed", "Action Completed"));
+                    actionSelect.appendChild(new Option("Noted", "Noted"));
                 } else {
                     actionSelect.appendChild(new Option("In Progress", "In Progress"));
                     actionSelect.appendChild(new Option("Action Completed", "Action Completed"));
@@ -7678,7 +7968,9 @@
                 
                 let activeAction = letter.status;
                 if (activeAction === "Forwarded") activeAction = "Forward to Officer";
-                if (activeAction === "Returned") activeAction = "Return";
+                if (activeAction === "Returned") {
+                    activeAction = isCC ? "Re-route" : "Return";
+                }
                 
                 // Fallback if current status doesn't match available options
                 if (![...actionSelect.options].some(o => o.value === activeAction)) {
@@ -7726,25 +8018,37 @@
 
         function handleStatusModalActionChange(val) {
             const forwardSection = document.getElementById("status-modal-forward-section");
+            const rerouteSection = document.getElementById("status-modal-reroute-section");
             const rGroup = document.getElementById("status-modal-r-group");
             const isSubjectUser = currentlyActiveRole.startsWith("Subject User");
-            if (!forwardSection) return;
 
-            if (val === "Forward to Officer" || val === "Return") {
-                forwardSection.style.display = "grid";
-                if (rGroup) {
-                    rGroup.style.display = isSubjectUser ? "none" : "block";
-                }
+            if (forwardSection) {
+                if (val === "Forward to Officer" || val === "Return") {
+                    forwardSection.style.display = "grid";
+                    if (rGroup) {
+                        rGroup.style.display = isSubjectUser ? "none" : "block";
+                    }
 
-                if (isSubjectUser) {
-                    handleStatusModalRChange("R01");
+                    if (isSubjectUser) {
+                        handleStatusModalRChange("R01");
+                    } else {
+                        handleStatusModalRChange(document.getElementById("status-modal-r").value);
+                    }
                 } else {
-                    handleStatusModalRChange(document.getElementById("status-modal-r").value);
+                    forwardSection.style.display = "none";
+                    if (rGroup) {
+                        rGroup.style.display = "block";
+                    }
                 }
-            } else {
-                forwardSection.style.display = "none";
-                if (rGroup) {
-                    rGroup.style.display = "block";
+            }
+
+            if (rerouteSection) {
+                if (val === "Re-route") {
+                    rerouteSection.style.display = "grid";
+                    document.getElementById("status-modal-reroute-division").value = "";
+                    handleRerouteDivisionChange("");
+                } else {
+                    rerouteSection.style.display = "none";
                 }
             }
         }
@@ -7796,6 +8100,33 @@
             });
         }
 
+        function handleRerouteDivisionChange(divName) {
+            const r01Select = document.getElementById("status-modal-reroute-r01");
+            const subjectSelect = document.getElementById("status-modal-reroute-subject");
+            if (!r01Select || !subjectSelect) return;
+
+            r01Select.innerHTML = '<option value="">Select Ref 01 User</option>';
+            subjectSelect.innerHTML = '<option value="">Select Subject User</option>';
+
+            if (!divName) return;
+
+            // Find R01 users for this division
+            const r01Users = usersData.filter(u => u.division === divName && u.subjectcode === "R01");
+            r01Users.forEach(u => {
+                r01Select.appendChild(new Option(`${u.name} (${u.role})`, u.name));
+            });
+
+            // Find Subject users for this division (not CC, not R01, not Viewer)
+            const subjectUsers = usersData.filter(u => u.division === divName && 
+                u.role !== "Coordinating Clerk" && 
+                u.subjectcode !== "R01" && 
+                !u.subjectcode.endsWith("-VIEW")
+            );
+            subjectUsers.forEach(u => {
+                subjectSelect.appendChild(new Option(`${u.name} (${u.role})`, u.name));
+            });
+        }
+
         function handleStatusUpdateConfirm(e) {
             e.preventDefault();
 
@@ -7814,6 +8145,46 @@
             let newStatus = actionVal;
             let targetActor = letter.assignedTo;
             const isSubjectUser = currentlyActiveRole.startsWith("Subject User");
+
+            if (actionVal === "Re-route") {
+                const divisionVal = document.getElementById("status-modal-reroute-division").value;
+                const r01Val = document.getElementById("status-modal-reroute-r01").value;
+                const subjectVal = document.getElementById("status-modal-reroute-subject").value;
+
+                if (!divisionVal || !r01Val || !subjectVal) {
+                    showToast("Error: Please select Division, Ref 01 user, and Subject user.");
+                    return;
+                }
+
+                letter.assignedDiv = divisionVal;
+                letter.assignedTo = subjectVal;
+                letter.r01 = r01Val;
+                letter.r02 = ""; // Reset secondary handler since it's a new assignment
+                letter.status = "In Progress";
+                letter.dispatchedByCC = currentUser.subjectcode;
+
+                // Update receivers list
+                letter.receivers = [r01Val, subjectVal];
+
+                letter.history.push({
+                    time: timestamp,
+                    action: "Re-routed",
+                    actor: `${currentUser.name} (${currentUser.title})`,
+                    target: `${subjectVal} (${divisionVal})`,
+                    remark: notes || `Re-routed to ${divisionVal}. Ref 01: ${r01Val}, Subject: ${subjectVal}.`
+                });
+
+                saveLettersData();
+                showToast(`Letter re-routed successfully to ${divisionVal}`);
+                closeStatusUpdateModal();
+
+                renderRegistryTable();
+                renderRepositoryTable();
+                renderReturnedLettersTable();
+                updateDashboardStatCounters();
+                toggleDashboardVariant(currentlyActiveRole);
+                return;
+            }
 
             if (actionVal === "Forward to Officer" || actionVal === "Return") {
                 newStatus = (actionVal === "Return") ? "Returned" : "Forwarded";
