@@ -6428,7 +6428,7 @@
             document.querySelectorAll(".dashboard-variant").forEach(el => el.style.display = "none");
 
             const config = rolesConfig[role];
-            if (role === "System Admin" || role === "Secretary") {
+            if (role === "System Admin" || role === "Secretary" || (config && config.isViewer)) {
                 document.querySelector(".dashboard-admin-view").style.display = "block";
                 renderRegistryTable();
                 updateDashboardStatCounters();
